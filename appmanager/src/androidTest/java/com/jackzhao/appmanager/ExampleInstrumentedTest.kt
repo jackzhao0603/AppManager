@@ -1,4 +1,4 @@
-package com.jackzhao.specpermi
+package com.jackzhao.appmanager
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

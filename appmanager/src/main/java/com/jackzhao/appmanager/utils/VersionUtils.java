@@ -1,4 +1,4 @@
-package com.jackzhao.specpermi.utils;
+package com.jackzhao.appmanager.utils;
 
 import android.annotation.TargetApi;
 import android.content.Context;

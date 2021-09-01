@@ -1,4 +1,4 @@
-package com.jackzhao.specpermi
+package com.jackzhao.appmanager
 
 import org.junit.Test
 

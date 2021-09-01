@@ -1,4 +1,4 @@
-package com.jackzhao.specpermi
+package com.jackzhao.appmanager
 
 import android.Manifest
 import android.app.admin.DevicePolicyManager
@@ -11,7 +11,7 @@ import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.PermissionChecker
-import com.jackzhao.specpermi.utils.VersionUtils
+import com.jackzhao.appmanager.utils.VersionUtils
 import java.util.ArrayList
 import java.util.NoSuchElementException
 
