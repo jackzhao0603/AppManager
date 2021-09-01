@@ -125,12 +125,18 @@ object PermissionManager {
         return false
     }
 
+    fun hasPermission(context: Context, pkg: String, permission: String): Boolean {
+        val pm: PackageManager = context.packageManager
+        return PackageManager.PERMISSION_GRANTED == pm.checkPermission(permission, pkg)
+    }
+
+
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
-    fun checkUsageAccessByPkg(context: Context, pkg: String): Boolean {
+    fun checkSelfUsageAccess(context: Context): Boolean {
         return try {
             val packageManager = context.packageManager
             var applicationInfo: ApplicationInfo? = null
-            applicationInfo = packageManager.getApplicationInfo(pkg, 0)
+            applicationInfo = packageManager.getApplicationInfo(context.packageName, 0)
             @SuppressLint("WrongConstant") val appOpsManager = context
                 .getSystemService("appops") as AppOpsManager
             val mode = appOpsManager.checkOpNoThrow(
@@ -144,28 +150,9 @@ object PermissionManager {
         }
     }
 
-
-    fun checkOverlayByPkg(context: Context, pkg: String): Boolean {
-        return try {
-            val packageManager = context.packageManager
-            var applicationInfo: ApplicationInfo? = null
-            applicationInfo = packageManager.getApplicationInfo(pkg, 0)
-            @SuppressLint("WrongConstant") val appOpsManager = context
-                .getSystemService("appops") as AppOpsManager
-            val mode = appOpsManager.checkOpNoThrow(
-                AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW,
-                applicationInfo.uid, applicationInfo.packageName
-            )
-            mode == AppOpsManager.MODE_ALLOWED
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
-        }
-    }
-
-    fun hasPermission(context: Context, pkg: String, permission: String): Boolean {
-        val pm: PackageManager = context.packageManager
-        return PackageManager.PERMISSION_GRANTED == pm.checkPermission(permission, pkg)
+    @RequiresApi(Build.VERSION_CODES.M)
+    fun checkSelfOverlay(context: Context): Boolean {
+       return Settings.canDrawOverlays(context)
     }
 
     fun getAllPermissionsByPkg(context: Context, packageName: String): List<String> {
@@ -210,9 +197,6 @@ object PermissionManager {
         }
         if (checkNotificationAccessByPkg(context, pkg)) {
             specialPermissions.add(BIND_NOTIFICATION_LISTENER_SERVICE)
-        }
-        if (checkUsageAccessByPkg(context, pkg)) {
-            specialPermissions.add(USAGE_ACCESS)
         }
 
         result.specialPermissions = specialPermissions

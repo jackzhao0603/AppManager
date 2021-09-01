@@ -25,11 +25,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-
-        val reuslt = PermissionManager.checkOverlayByPkg(this, "com.trendmicro.freetmms.gmobi")
-//        val reuslt = PermissionManager.checkOverlayByPkg(this, packageName)
-
-        Log.e(TAG, "onCreate: $reuslt")
     }
 }
 
