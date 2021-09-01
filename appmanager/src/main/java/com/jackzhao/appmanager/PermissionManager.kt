@@ -150,9 +150,17 @@ object PermissionManager {
         }
     }
 
+    fun checkSelfAccessbility(context: Context): Boolean {
+        return checkAccessbilityByPkg(context, context.packageName)
+    }
+
+    fun checkSelfNotificationAccess(context: Context): Boolean {
+        return checkNotificationAccessByPkg(context, context.packageName)
+    }
+
     @RequiresApi(Build.VERSION_CODES.M)
     fun checkSelfOverlay(context: Context): Boolean {
-       return Settings.canDrawOverlays(context)
+        return Settings.canDrawOverlays(context)
     }
 
     fun getAllPermissionsByPkg(context: Context, packageName: String): List<String> {
