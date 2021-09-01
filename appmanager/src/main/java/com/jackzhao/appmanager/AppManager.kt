@@ -99,10 +99,6 @@ object AppManager {
             ?: "com.google.android.packageinstaller"
     }
 
-    fun hasPermission(context: Context, pkg: String, permission: String): Boolean {
-        val pm: PackageManager = context.packageManager
-        return PackageManager.PERMISSION_GRANTED == pm.checkPermission(permission, pkg)
-    }
 
     fun getSettingPkgname(context: Context): String {
         val packageManager: PackageManager = context.packageManager
