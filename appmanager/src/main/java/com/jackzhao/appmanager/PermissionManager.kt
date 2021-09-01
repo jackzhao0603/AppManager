@@ -30,23 +30,6 @@ object PermissionManager {
         return false
     }
 
-    fun isAppHideIcon(context: Context, pkg: String): Boolean {
-        if (VersionUtils.isAndroidL()) {
-            val resolveIntent = Intent(Intent.ACTION_MAIN, null)
-            resolveIntent.addCategory(Intent.CATEGORY_LAUNCHER)
-            resolveIntent.setPackage(pkg)
-            val resolveinfoList = context.packageManager
-                .queryIntentActivities(resolveIntent, 0)
-            try {
-                resolveinfoList.iterator().next()
-            } catch (e: NoSuchElementException) {
-                return true
-            }
-            return false
-        }
-        return false
-    }
-
 
     fun getAllNotificationAccessApps(context: Context): Set<String?>? {
         return NotificationManagerCompat.getEnabledListenerPackages(context)
