@@ -1,6 +1,7 @@
 package com.jackzhao.specialpermission_app
 
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,7 +10,9 @@ import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.jackzhao.appmanager.AppManager
 import com.jackzhao.appmanager.PermissionManager
+import com.jackzhao.appmanager.utils.ProcessUtils
 import com.jackzhao.specialpermission_app.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
@@ -25,6 +28,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+        AppManager.gotoSystemSetting(this,Settings.ACTION_HOME_SETTINGS)
     }
 }
 

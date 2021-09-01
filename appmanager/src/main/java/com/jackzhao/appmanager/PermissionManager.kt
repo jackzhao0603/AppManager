@@ -7,12 +7,14 @@ import android.app.AppOpsManager
 import android.app.admin.DevicePolicyManager
 import android.content.ContentValues
 import android.content.Context
+import android.content.Context.POWER_SERVICE
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.os.PowerManager
 import android.os.Process
 import android.provider.Settings
 import android.text.TextUtils
@@ -27,6 +29,12 @@ import com.jackzhao.appmanager.utils.VersionUtils
 import java.lang.Exception
 import java.lang.reflect.Field
 import java.util.*
+import android.content.ComponentName
+import androidx.core.content.ContextCompat.startActivity
+
+import android.content.pm.ResolveInfo
+import androidx.core.content.ContextCompat.startActivity
+
 
 object PermissionManager {
 
@@ -46,10 +54,10 @@ object PermissionManager {
         "STORAGE"
     )
 
+
     const val DEVICE_ADMIN = "device_admin"
     const val ACCESSIBILITY = "accessibility"
     const val BIND_NOTIFICATION_LISTENER_SERVICE = "bind_notification_listener_service"
-    const val USAGE_ACCESS = "usage_access"
 
 
     fun isActiveAdmin(context: Context, packageName: String): Boolean {
@@ -252,7 +260,7 @@ object PermissionManager {
         }
     }
 
-    fun gotoAlertWindowSetting(context: Context) {
+    fun gotoOverlaySetting(context: Context) {
         try {
             val intent = Intent()
             intent.action = Settings.ACTION_MANAGE_OVERLAY_PERMISSION
@@ -288,6 +296,15 @@ object PermissionManager {
         i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
         i.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
         context.startActivity(i)
+    }
+
+    fun gotoBatteryOptimization(activity: Activity): Boolean {
+        val powerUsageIntent = Intent(Intent.ACTION_POWER_USAGE_SUMMARY)
+        activity.packageManager.resolveActivity(powerUsageIntent, 0)?.let {
+            activity.startActivity(powerUsageIntent)
+            return true
+        }
+        return false
     }
 
 }

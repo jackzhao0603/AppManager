@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
+import com.jackzhao.appmanager.AppManager.gotoSystemSetting
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
@@ -120,17 +121,6 @@ object SecurityManager {
         }
     }
 
-    fun gotoSystemSetting(context: Context, settingAction: String?): Boolean {
-        return try {
-            val intent = Intent(settingAction)
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
-            true
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
-        }
-    }
 
     fun gotoSystemDeveloperSettings(context: Context): Boolean {
         return gotoSystemSetting(context, Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)

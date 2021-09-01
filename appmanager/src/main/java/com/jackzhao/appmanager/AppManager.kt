@@ -153,4 +153,16 @@ object AppManager {
         }
         return isInputMethodApp
     }
+
+    fun gotoSystemSetting(context: Context, settingAction: String?): Boolean {
+        return try {
+            val intent = Intent(settingAction)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            true
+        } catch (e: java.lang.Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
 }
