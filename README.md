@@ -1,4 +1,4 @@
-# SpecialPermissions
+# AppManager
 [![](https://jitpack.io/v/jackzhao0603/AppManager.svg)](https://jitpack.io/#jackzhao0603/AppManager)
 [![Apache License 2.0][1]][2]
 [![API][3]][4]
