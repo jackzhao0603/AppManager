@@ -7,58 +7,35 @@ import android.app.AppOpsManager
 import android.app.admin.DevicePolicyManager
 import android.content.ContentValues
 import android.content.Context
-import android.content.Context.POWER_SERVICE
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
-import android.os.PowerManager
-import android.os.Process
 import android.provider.Settings
 import android.text.TextUtils
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.core.content.PermissionChecker
+import com.jackzhao.appmanager.callback.IPermissionResult
+import com.jackzhao.appmanager.const.PermissionConsts.ACCESSIBILITY
+import com.jackzhao.appmanager.const.PermissionConsts.BIND_NOTIFICATION_LISTENER_SERVICE
+import com.jackzhao.appmanager.const.PermissionConsts.CHECKPERMISSIONGROUP_LIST
+import com.jackzhao.appmanager.const.PermissionConsts.DEVICE_ADMIN
 import com.jackzhao.appmanager.data.AppWithPermission
-import com.jackzhao.appmanager.utils.ReflectionUtils
 import com.jackzhao.appmanager.utils.VersionUtils
-import java.lang.Exception
 import java.lang.reflect.Field
 import java.util.*
-import android.content.ComponentName
-import androidx.core.content.ContextCompat.startActivity
-
-import android.content.pm.ResolveInfo
-import androidx.core.content.ContextCompat.startActivity
 
 
 object PermissionManager {
 
     private const val TAG = "PermissionManager"
-
-    private val checkPermissionGroupList: Array<String> = arrayOf(
-        "ACTIVITY_RECOGNITION",
-        "CALENDAR",
-        "CALL_LOG",
-        "CAMERA",
-        "CONTACTS",
-        "LOCATION",
-        "RECORD",
-        "PHONE",
-        "SENSORS",
-        "SMS",
-        "STORAGE"
-    )
-
-
-    const val DEVICE_ADMIN = "device_admin"
-    const val ACCESSIBILITY = "accessibility"
-    const val BIND_NOTIFICATION_LISTENER_SERVICE = "bind_notification_listener_service"
-
+    private var mPermissionResult: IPermissionResult? = null
 
     fun isActiveAdmin(context: Context, packageName: String): Boolean {
         val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
@@ -187,7 +164,7 @@ object PermissionManager {
                 val value = field.get(null) as String
                 Log.e(ContentValues.TAG, "getAllPermissionsByPkg: $value")
                 if (hasPermission(context, packageName, value)) {
-                    checkPermissionGroupList.forEach {
+                    CHECKPERMISSIONGROUP_LIST.forEach {
                         if (value.contains(it)) {
                             set.add(it)
                         }
@@ -305,6 +282,60 @@ object PermissionManager {
             return true
         }
         return false
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    fun requestPermissionResult(
+        activity: Activity,
+        requestCode: Int,
+        permissionList: Array<String>,
+        permissionResult: IPermissionResult
+    ) {
+        if (!VersionUtils.isAndroidM()) {
+            return
+        }
+        mPermissionResult = permissionResult
+        val applyPermissions = ArrayList<String>()
+        permissionList.forEach {
+            if (ContextCompat.checkSelfPermission(activity, it) != PackageManager.PERMISSION_GRANTED
+            ) {
+                applyPermissions.add(it)
+            }
+        }
+        val permissions = applyPermissions.toTypedArray()
+        if (permissions.isNotEmpty()) {
+            ActivityCompat.requestPermissions(activity, permissions, requestCode)
+        } else {
+            permissionResult.onPermissionSuccess(activity, requestCode)
+        }
+    }
+
+    fun onRequestPermissionsResult(
+        activity: Activity,
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        requestResult(activity, requestCode, permissions, grantResults)
+    }
+
+    private fun requestResult(
+        activity: Activity,
+        code: Int,
+        permissions: Array<String>,
+        results: IntArray
+    ) {
+        val deniedPermissions: MutableList<String> = ArrayList()
+        for (i in results.indices) {
+            if (results[i] != PackageManager.PERMISSION_GRANTED) {
+                deniedPermissions.add(permissions[i])
+            }
+        }
+        if (deniedPermissions.size > 0) {
+            mPermissionResult?.onPermissionFailed(activity, code, deniedPermissions.toTypedArray())
+        } else {
+            mPermissionResult?.onPermissionSuccess(activity, code)
+        }
     }
 
 }
