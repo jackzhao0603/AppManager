@@ -2,17 +2,26 @@ package com.jackzhao.appmanager
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ApplicationInfo
-import android.content.pm.PackageManager
+import android.content.pm.*
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import android.text.TextUtils
 import android.util.Log
 import com.jackzhao.appmanager.utils.VersionUtils
-import java.util.NoSuchElementException
+import java.security.MessageDigest
+import java.security.NoSuchAlgorithmException
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.List
+import kotlin.collections.MutableList
+import kotlin.collections.indices
+import kotlin.experimental.and
+import kotlin.experimental.or
 
 object AppManager {
     private const val TAG = "AppManager"
+    const val SHA1 = "SHA1"
 
     fun isAppHideIcon(context: Context, pkg: String): Boolean {
         if (VersionUtils.isAndroidL()) {
@@ -165,4 +174,124 @@ object AppManager {
             false
         }
     }
+
+
+    fun getSingInfo(context: Context, packageName: String, type: String): List<String>? {
+        val list: MutableList<String> = java.util.ArrayList()
+        val signs: Array<Signature>? = getSignatures(context, packageName)
+        signs?.let {
+            for (sig in signs) {
+                if (SHA1 == type) {
+                    getSignatureString(sig, SHA1)?.let {
+                        list.add(it)
+                    }
+                }
+            }
+        }
+        return list
+    }
+
+    /**
+     * 获取相应的类型的字符串（把签名的byte[]信息转换成16进制）
+     *
+     * @param sig
+     * @param type
+     * @return
+     */
+    fun getSignatureString(sig: Signature, type: String): String? {
+        val hexBytes = sig.toCharsString().toByteArray()
+        var fingerprint = "error!"
+        try {
+            val digest = MessageDigest.getInstance(type)
+            if (digest != null) {
+                val digestBytes = digest.digest(hexBytes)
+                val sb = StringBuilder()
+                for (digestByte in digestBytes) {
+                    sb.append(
+                        Integer.toHexString((digestByte and 0xFF.toByte() or 0x100.toByte()).toInt())
+                            .substring(1, 3)
+                    )
+                }
+                fingerprint = sb.toString().toUpperCase()
+            }
+        } catch (e: NoSuchAlgorithmException) {
+            e.printStackTrace()
+        }
+        return fingerprint
+    }
+
+
+    /**
+     * 返回对应包的签名信息
+     *
+     * @param context
+     * @param packageName
+     * @return
+     */
+    fun getSignatures(context: Context, packageName: String): Array<Signature>? {
+        try {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val packageInfo = context.packageManager.getPackageInfo(
+                    packageName!!,
+                    PackageManager.GET_SIGNING_CERTIFICATES
+                )
+                packageInfo.signingInfo.signingCertificateHistory
+            } else {
+                val packageInfo = context.packageManager.getPackageInfo(
+                    packageName!!,
+                    PackageManager.GET_SIGNATURES
+                )
+                packageInfo.signatures
+            }
+        } catch (e: PackageManager.NameNotFoundException) {
+            e.printStackTrace()
+        }
+        return null
+    }
+
+
+    fun getVersionCode(context: Context, pkg: String): String {
+        val pm = context.packageManager
+        try {
+            val packageInfo = pm.getPackageInfo(pkg, 0)
+            return packageInfo.versionName
+        } catch (e: PackageManager.NameNotFoundException) {
+            e.printStackTrace()
+        }
+        return ""
+    }
+
+
+    fun getApkPathByPkg(context: Context, pkg: String): String? {
+        val pm = context.packageManager
+        try {
+            val packageInfo = pm.getPackageInfo(pkg, 0)
+            return packageInfo.applicationInfo.sourceDir
+        } catch (e: PackageManager.NameNotFoundException) {
+            e.printStackTrace()
+        }
+        return null
+    }
+
+    fun getApplicationInfo(context: Context, pkg: String): ApplicationInfo? {
+        val pm = context.packageManager
+        try {
+            val packageInfo = pm.getPackageInfo(pkg, 0)
+            return packageInfo.applicationInfo
+        } catch (e: PackageManager.NameNotFoundException) {
+            e.printStackTrace()
+        }
+        return null
+    }
+
+
+    fun findActivitiesForPackage(context: Context, packageName: String): List<ResolveInfo>? {
+        val packageManager = context.packageManager
+        val mainIntent = Intent(Intent.ACTION_MAIN, null)
+        mainIntent.addCategory(Intent.CATEGORY_LAUNCHER)
+        mainIntent.setPackage(packageName)
+        val apps = packageManager.queryIntentActivities(mainIntent, 0)
+        return apps ?: java.util.ArrayList()
+    }
 }
+
