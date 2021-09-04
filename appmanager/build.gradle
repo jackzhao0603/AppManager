@@ -47,8 +47,7 @@ afterEvaluate {
             release(MavenPublication) {
                 from components.release
                 groupId = 'com.github.jackzhao0603'
-                artifactId = 'banner'
-                version = 'v0.1.1'
+                artifactId = 'appmanager'
             }
         }
     }
