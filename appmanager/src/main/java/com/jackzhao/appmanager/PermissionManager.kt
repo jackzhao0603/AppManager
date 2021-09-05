@@ -74,7 +74,7 @@ object PermissionManager {
             )
         }
         val mStringColonSplitter = TextUtils.SimpleStringSplitter(':')
-        if (accessibilityEnabled == 1) {
+        if (accessibilityEnabled == 1 || VersionUtils.isAndroidR()) {
             val settingValue = Settings.Secure.getString(
                 context.applicationContext.contentResolver,
                 Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
