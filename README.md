@@ -17,7 +17,7 @@
 2. Add the dependency
     ```gradle
      dependencies {
-	       implementation 'com.github.jackzhao0603:AppManager:v0.1.3'
+	       implementation 'com.github.jackzhao0603:AppManager:v0.1.4'
 	 }
 
     ```
