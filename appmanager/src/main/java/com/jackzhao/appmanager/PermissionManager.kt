@@ -200,6 +200,7 @@ object PermissionManager {
     fun gotoUsageAccessSettings(context: Context) {
         try {
             val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+            intent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
             context.startActivity(intent)
         } catch (e: Exception) {
             Log.e(
@@ -217,7 +218,7 @@ object PermissionManager {
                 Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
                 Uri.parse("package:" + context.packageName)
             )
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
             context.startActivity(intent)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -227,6 +228,7 @@ object PermissionManager {
     fun gotoAccessibilitySettings(context: Context) {
         try {
             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+            intent.flags = Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
             context.startActivity(intent)
         } catch (e: Exception) {
             Log.e(
@@ -241,6 +243,7 @@ object PermissionManager {
         try {
             val intent = Intent()
             intent.action = Settings.ACTION_MANAGE_OVERLAY_PERMISSION
+            Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
             intent.data = Uri.parse("package:" + context.packageName)
             (context as Activity).startActivityForResult(intent, 100)
         } catch (e: Exception) {
@@ -256,7 +259,7 @@ object PermissionManager {
                 Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
             }
             if (context !is Activity) {
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
             }
             context.startActivity(intent)
         } catch (e: Exception) {
@@ -277,6 +280,7 @@ object PermissionManager {
 
     fun gotoBatteryOptimization(activity: Activity): Boolean {
         val powerUsageIntent = Intent(Intent.ACTION_POWER_USAGE_SUMMARY)
+        powerUsageIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
         activity.packageManager.resolveActivity(powerUsageIntent, 0)?.let {
             activity.startActivity(powerUsageIntent)
             return true
