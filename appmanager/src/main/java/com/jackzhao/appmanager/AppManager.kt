@@ -293,5 +293,32 @@ object AppManager {
         val apps = packageManager.queryIntentActivities(mainIntent, 0)
         return apps ?: java.util.ArrayList()
     }
+
+    fun getMarketApps(context: Context?): ArrayList<String> {
+        val pkgs: ArrayList<String> = ArrayList()
+        if (context == null) return pkgs
+        val intent = Intent()
+        intent.action = "android.intent.action.VIEW"
+        intent.addCategory(Intent.CATEGORY_DEFAULT)
+        intent.data = Uri.parse("market://details?id=")
+        val pm = context.packageManager
+        val infos = pm.queryIntentActivities(
+            intent,
+            0
+        )
+        if (infos == null || infos.size == 0) return pkgs
+        val size = infos.size
+        for (i in 0 until size) {
+            var pkgName = ""
+            try {
+                val activityInfo = infos[i].activityInfo
+                pkgName = activityInfo.packageName
+            } catch (e: java.lang.Exception) {
+                e.printStackTrace()
+            }
+            if (!TextUtils.isEmpty(pkgName)) pkgs.add(pkgName)
+        }
+        return pkgs
+    }
 }
 
