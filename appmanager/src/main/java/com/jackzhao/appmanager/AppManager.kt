@@ -1,5 +1,6 @@
 package com.jackzhao.appmanager
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.*
@@ -22,6 +23,9 @@ import kotlin.experimental.or
 object AppManager {
     private const val TAG = "AppManager"
     const val SHA1 = "SHA1"
+    const val EXTRA_PREFS_SET_BACK_TEXT = "extra_prefs_set_back_text"
+    const val EXTRA_PREFS_SHOW_BUTTON_BAR = "extra_prefs_show_button_bar"
+    const val EXTRA_SHOW_FRAGMENT_AS_SUBSETTING = ":settings:show_fragment_as_subsetting"
 
     fun isAppHideIcon(context: Context, pkg: String): Boolean {
         if (VersionUtils.isAndroidL()) {
@@ -67,7 +71,7 @@ object AppManager {
     private fun getIntentPkgList(
         context: Context,
         intent: Intent,
-        bSystemOnly: Boolean
+        bSystemOnly: Boolean,
     ): List<String>? {
         val list: MutableList<String> = ArrayList()
         val pm: PackageManager = context.packageManager
@@ -319,6 +323,29 @@ object AppManager {
             if (!TextUtils.isEmpty(pkgName)) pkgs.add(pkgName)
         }
         return pkgs
+    }
+
+
+    fun showAppInfo(context: Context, packageName: String) {
+        val packageURI = Uri.parse("package:$packageName")
+        val intent = Intent("android.settings.APPLICATION_DETAILS_SETTINGS", packageURI)
+        intent.flags = (Intent.FLAG_ACTIVITY_CLEAR_TASK
+                or Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT
+                or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+        if (context !is Activity) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        intent.putExtra(EXTRA_SHOW_FRAGMENT_AS_SUBSETTING, true)
+        intent.putExtra(EXTRA_PREFS_SHOW_BUTTON_BAR, true)
+        intent.putExtra(EXTRA_PREFS_SET_BACK_TEXT, "BACK")
+        try {
+            context.startActivity(intent)
+            if (context is Activity) {
+                context.overridePendingTransition(0, 0)
+            }
+        } catch (e: java.lang.Exception) {
+            e.printStackTrace()
+        }
     }
 }
 
