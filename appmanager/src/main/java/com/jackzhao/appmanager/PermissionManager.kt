@@ -201,6 +201,7 @@ object PermissionManager {
         try {
             val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
             intent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(intent)
         } catch (e: Exception) {
             Log.e(
@@ -218,7 +219,9 @@ object PermissionManager {
                 Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
                 Uri.parse("package:" + context.packageName)
             )
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
+            intent.flags =
+                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(intent)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -229,6 +232,7 @@ object PermissionManager {
         try {
             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             intent.flags = Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(intent)
         } catch (e: Exception) {
             Log.e(
@@ -244,6 +248,7 @@ object PermissionManager {
             val intent = Intent()
             intent.action = Settings.ACTION_MANAGE_OVERLAY_PERMISSION
             Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             intent.data = Uri.parse("package:" + context.packageName)
             (context as Activity).startActivityForResult(intent, 100)
         } catch (e: Exception) {
@@ -261,6 +266,7 @@ object PermissionManager {
             if (context !is Activity) {
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
             }
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(intent)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -281,6 +287,7 @@ object PermissionManager {
     fun gotoBatteryOptimization(activity: Activity): Boolean {
         val powerUsageIntent = Intent(Intent.ACTION_POWER_USAGE_SUMMARY)
         powerUsageIntent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+        powerUsageIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         activity.packageManager.resolveActivity(powerUsageIntent, 0)?.let {
             activity.startActivity(powerUsageIntent)
             return true
@@ -293,7 +300,7 @@ object PermissionManager {
         activity: Activity,
         requestCode: Int,
         permissionList: Array<String>,
-        permissionResult: IPermissionResult
+        permissionResult: IPermissionResult,
     ) {
         if (!VersionUtils.isAndroidM()) {
             return
@@ -318,7 +325,7 @@ object PermissionManager {
         activity: Activity,
         requestCode: Int,
         permissions: Array<String>,
-        grantResults: IntArray
+        grantResults: IntArray,
     ) {
         requestResult(activity, requestCode, permissions, grantResults)
     }
@@ -327,7 +334,7 @@ object PermissionManager {
         activity: Activity,
         code: Int,
         permissions: Array<String>,
-        results: IntArray
+        results: IntArray,
     ) {
         val deniedPermissions: MutableList<String> = ArrayList()
         for (i in results.indices) {
