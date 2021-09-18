@@ -6,7 +6,7 @@ import android.database.Cursor
 import android.net.Uri
 import com.jackzhao.appmanager.const.jackContext
 
-class AccessHandlerProvider : ContentProvider() {
+class AppManagerProvider : ContentProvider() {
 
     override fun onCreate(): Boolean {
         jackContext = context
