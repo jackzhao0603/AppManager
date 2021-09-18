@@ -13,7 +13,7 @@
     <application>
         <provider
             android:name=".provider.AppManagerProvider"
-            android:authorities="appmanager.contextprovider"
+            android:authorities="${applicationId}.appmanager.contextprovider"
             android:enabled="true"
             android:exported="false" />
     </application>
