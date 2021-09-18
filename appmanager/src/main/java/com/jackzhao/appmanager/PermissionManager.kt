@@ -26,6 +26,7 @@ import com.jackzhao.appmanager.const.PermissionConsts.ACCESSIBILITY
 import com.jackzhao.appmanager.const.PermissionConsts.BIND_NOTIFICATION_LISTENER_SERVICE
 import com.jackzhao.appmanager.const.PermissionConsts.CHECKPERMISSIONGROUP_LIST
 import com.jackzhao.appmanager.const.PermissionConsts.DEVICE_ADMIN
+import com.jackzhao.appmanager.const.jackContext
 import com.jackzhao.appmanager.data.AppWithPermission
 import com.jackzhao.appmanager.utils.VersionUtils
 import java.lang.reflect.Field
@@ -37,8 +38,9 @@ object PermissionManager {
     private const val TAG = "PermissionManager"
     private var mPermissionResult: IPermissionResult? = null
 
-    fun isActiveAdmin(context: Context, packageName: String): Boolean {
-        val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+    fun isActiveAdmin(packageName: String): Boolean {
+        val dpm =
+            jackContext!!.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
         val adminList = dpm.activeAdmins
         if (adminList != null && adminList.isNotEmpty()) {
             for (componentName in adminList) {
@@ -49,21 +51,21 @@ object PermissionManager {
     }
 
 
-    fun getAllNotificationAccessApps(context: Context): Set<String?>? {
-        return NotificationManagerCompat.getEnabledListenerPackages(context)
+    fun getAllNotificationAccessApps(): Set<String?>? {
+        return NotificationManagerCompat.getEnabledListenerPackages(jackContext!!)
     }
 
-    fun checkNotificationAccessByPkg(context: Context, pkg: String): Boolean {
-        return getAllNotificationAccessApps(context)?.contains(pkg) == true
+    fun checkNotificationAccessByPkg(pkg: String): Boolean {
+        return getAllNotificationAccessApps()?.contains(pkg) == true
     }
 
 
-    fun getAllAccessbilityApps(context: Context): List<String>? {
+    fun getAllAccessbilityApps(): List<String>? {
         var accessibilityEnabled = 0
         val result: MutableList<String> = ArrayList()
         try {
             accessibilityEnabled = Settings.Secure.getInt(
-                context.applicationContext.contentResolver,
+                jackContext!!.applicationContext.contentResolver,
                 Settings.Secure.ACCESSIBILITY_ENABLED
             )
             Log.v(TAG, "accessibilityEnabled = $accessibilityEnabled")
@@ -76,7 +78,7 @@ object PermissionManager {
         val mStringColonSplitter = TextUtils.SimpleStringSplitter(':')
         if (accessibilityEnabled == 1 || VersionUtils.isAndroidR()) {
             val settingValue = Settings.Secure.getString(
-                context.applicationContext.contentResolver,
+                jackContext!!.applicationContext.contentResolver,
                 Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
             )
             if (settingValue != null) {
@@ -90,17 +92,17 @@ object PermissionManager {
         return result
     }
 
-    fun checkAccessbilityByPkg(context: Context, pkg: String): Boolean {
-        return getAllAccessbilityApps(context)?.contains(pkg) == true
+    fun checkAccessbilityByPkg(pkg: String): Boolean {
+        return getAllAccessbilityApps()?.contains(pkg) == true
     }
 
 
-    fun checkReadSdPermission(context: Context): Boolean {
+    fun checkReadSdPermission(): Boolean {
         if (VersionUtils.isAndroidR() && Environment.isExternalStorageManager())
             return true
         if (!VersionUtils.isAndroidR() &&
             ActivityCompat.checkSelfPermission(
-                context,
+                jackContext!!,
                 Manifest.permission.READ_EXTERNAL_STORAGE
             ) == PermissionChecker.PERMISSION_GRANTED
         ) {
@@ -110,19 +112,19 @@ object PermissionManager {
         return false
     }
 
-    fun hasPermission(context: Context, pkg: String, permission: String): Boolean {
-        val pm: PackageManager = context.packageManager
+    fun hasPermission(pkg: String, permission: String): Boolean {
+        val pm: PackageManager = jackContext!!.packageManager
         return PackageManager.PERMISSION_GRANTED == pm.checkPermission(permission, pkg)
     }
 
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
-    fun checkSelfUsageAccess(context: Context): Boolean {
+    fun checkSelfUsageAccess(): Boolean {
         return try {
-            val packageManager = context.packageManager
+            val packageManager = jackContext!!.packageManager
             var applicationInfo: ApplicationInfo? = null
-            applicationInfo = packageManager.getApplicationInfo(context.packageName, 0)
-            @SuppressLint("WrongConstant") val appOpsManager = context
+            applicationInfo = packageManager.getApplicationInfo(jackContext!!.packageName, 0)
+            @SuppressLint("WrongConstant") val appOpsManager = jackContext!!
                 .getSystemService("appops") as AppOpsManager
             val mode = appOpsManager.checkOpNoThrow(
                 AppOpsManager.OPSTR_GET_USAGE_STATS,
@@ -135,20 +137,20 @@ object PermissionManager {
         }
     }
 
-    fun checkSelfAccessbility(context: Context): Boolean {
-        return checkAccessbilityByPkg(context, context.packageName)
+    fun checkSelfAccessbility(): Boolean {
+        return checkAccessbilityByPkg(jackContext!!.packageName)
     }
 
-    fun checkSelfNotificationAccess(context: Context): Boolean {
-        return checkNotificationAccessByPkg(context, context.packageName)
+    fun checkSelfNotificationAccess(): Boolean {
+        return checkNotificationAccessByPkg(jackContext!!.packageName)
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
-    fun checkSelfOverlay(context: Context): Boolean {
-        return Settings.canDrawOverlays(context)
+    fun checkSelfOverlay(): Boolean {
+        return Settings.canDrawOverlays(jackContext!!)
     }
 
-    fun getAllPermissionsByPkg(context: Context, packageName: String): List<String> {
+    fun getAllPermissionsByPkg(packageName: String): List<String> {
         val set = HashSet<String>()
         val clazz = Class.forName("android.Manifest")
         val classList = clazz.declaredClasses
@@ -163,7 +165,7 @@ object PermissionManager {
             for (field in fields) {
                 val value = field.get(null) as String
                 Log.e(ContentValues.TAG, "getAllPermissionsByPkg: $value")
-                if (hasPermission(context, packageName, value)) {
+                if (hasPermission(packageName, value)) {
                     CHECKPERMISSIONGROUP_LIST.forEach {
                         if (value.contains(it)) {
                             set.add(it)
@@ -176,19 +178,19 @@ object PermissionManager {
     }
 
 
-    fun getAppPermissionsByPkg(context: Context, pkg: String): AppWithPermission {
+    fun getAppPermissionsByPkg(pkg: String): AppWithPermission {
         var result = AppWithPermission(pkg)
-        var normalPermissions = getAllPermissionsByPkg(context, pkg)
+        var normalPermissions = getAllPermissionsByPkg(pkg)
         result.normalPermissions = normalPermissions
         var specialPermissions = ArrayList<String>()
 
-        if (isActiveAdmin(context, pkg)) {
+        if (isActiveAdmin(pkg)) {
             specialPermissions.add(DEVICE_ADMIN)
         }
-        if (checkAccessbilityByPkg(context, pkg)) {
+        if (checkAccessbilityByPkg(pkg)) {
             specialPermissions.add(ACCESSIBILITY)
         }
-        if (checkNotificationAccessByPkg(context, pkg)) {
+        if (checkNotificationAccessByPkg(pkg)) {
             specialPermissions.add(BIND_NOTIFICATION_LISTENER_SERVICE)
         }
 
@@ -197,12 +199,12 @@ object PermissionManager {
     }
 
 
-    fun gotoUsageAccessSettings(context: Context) {
+    fun gotoUsageAccessSettings() {
         try {
             val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
             intent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
+            jackContext!!.startActivity(intent)
         } catch (e: Exception) {
             Log.e(
                 TAG,
@@ -213,27 +215,27 @@ object PermissionManager {
     }
 
     @RequiresApi(api = Build.VERSION_CODES.R)
-    fun gotoStorageSetting(context: Context) {
+    fun gotoStorageSetting() {
         try {
             val intent = Intent(
                 Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
-                Uri.parse("package:" + context.packageName)
+                Uri.parse("package:" + jackContext!!.packageName)
             )
             intent.flags =
                 Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
+            jackContext!!.startActivity(intent)
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    fun gotoAccessibilitySettings(context: Context) {
+    fun gotoAccessibilitySettings() {
         try {
             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
             intent.flags = Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
+            jackContext!!.startActivity(intent)
         } catch (e: Exception) {
             Log.e(
                 TAG,
@@ -243,45 +245,45 @@ object PermissionManager {
         }
     }
 
-    fun gotoOverlaySetting(context: Context) {
+    fun gotoOverlaySetting() {
         try {
             val intent = Intent()
             intent.action = Settings.ACTION_MANAGE_OVERLAY_PERMISSION
             Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            intent.data = Uri.parse("package:" + context.packageName)
-            (context as Activity).startActivityForResult(intent, 100)
+            intent.data = Uri.parse("package:" + jackContext!!.packageName)
+            (jackContext!! as Activity).startActivityForResult(intent, 100)
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    fun gotoNotificationListenSettings(context: Context) {
+    fun gotoNotificationListenSettings() {
         try {
             val intent: Intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
                 Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
             } else {
                 Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
             }
-            if (context !is Activity) {
+            if (jackContext!! !is Activity) {
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
             }
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
+            jackContext!!.startActivity(intent)
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    fun gotoAppSettingsConfigActivity(context: Context) {
+    fun gotoAppSettingsConfigActivity() {
         val i = Intent()
         i.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
         i.addCategory(Intent.CATEGORY_DEFAULT)
-        i.data = Uri.parse("package:" + context.packageName)
+        i.data = Uri.parse("package:" + jackContext!!.packageName)
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
         i.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
-        context.startActivity(i)
+        jackContext!!.startActivity(i)
     }
 
     fun gotoBatteryOptimization(activity: Activity): Boolean {

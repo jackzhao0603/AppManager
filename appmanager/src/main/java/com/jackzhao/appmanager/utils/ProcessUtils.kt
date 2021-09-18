@@ -1,111 +1,109 @@
-package com.jackzhao.appmanager.utils;
+package com.jackzhao.appmanager.utils
 
-import android.app.ActivityManager;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
-import android.text.TextUtils;
-import android.util.Log;
+import android.annotation.SuppressLint
+import android.app.ActivityManager
+import android.content.Context
+import android.text.TextUtils
+import android.util.Log
+import com.jackzhao.appmanager.const.jackContext
+import java.io.BufferedReader
+import java.io.IOException
+import java.io.InputStream
+import java.io.InputStreamReader
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
+object ProcessUtils {
+    private const val TAG = "ProcessUtils"
 
 
-public class ProcessUtils {
-    private static final String TAG = "ProcessUtils";
-    private static volatile String processName = null;
-
-    public static String getProcessName(Context context) {
-        if (!TextUtils.isEmpty(processName))
-            return processName;
-        processName = doGetProcessName(context);
-        return processName;
+    @Volatile
+    private var processName: String? = null
+    fun getProcessName(): String? {
+        if (!TextUtils.isEmpty(processName)) return processName
+        processName = doGetProcessName()
+        return processName
     }
 
-    private static String doGetProcessName(Context context) {
-        ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        List<ActivityManager.RunningAppProcessInfo> runningApps = am.getRunningAppProcesses();
-        if (runningApps == null) {
-            return null;
-        }
-        for (ActivityManager.RunningAppProcessInfo proInfo : runningApps) {
+    private fun doGetProcessName(): String? {
+        val am = jackContext!!.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val runningApps = am.runningAppProcesses ?: return null
+        for (proInfo in runningApps) {
             if (proInfo.pid == android.os.Process.myPid()) {
                 if (proInfo.processName != null) {
-                    return proInfo.processName;
+                    return proInfo.processName
                 }
             }
         }
-        return context.getPackageName();
+        return jackContext!!.packageName
     }
 
-    public static boolean isMainProcess(Context context) {
-        String processName = getProcessName(context);
-        String pkgName = context.getPackageName();
-        if (!TextUtils.isEmpty(processName) && !TextUtils.equals(processName, pkgName)) {
-            return false;
-        } else {
-            return true;
+    fun isMainProcess(): Boolean {
+        val processName = getProcessName()
+        val pkgName = jackContext!!.packageName
+        return !(!TextUtils.isEmpty(processName) && !TextUtils.equals(processName, pkgName))
+    }
+
+    @Throws(IOException::class, InterruptedException::class)
+    fun execute(
+        cmds: Array<String?>?,
+        envs: Array<String?>?,
+        outputBuilder: StringBuilder?,
+        errorBuilder: StringBuilder?,
+    ): Int {
+        val p = Runtime.getRuntime().exec(cmds, envs)
+        StreamConsumer(p.inputStream, outputBuilder).start()
+        StreamConsumer(p.errorStream, errorBuilder).start()
+        return p.waitFor()
+    }
+
+    @Throws(IOException::class)
+    fun execute(
+        cmds: Array<String?>?,
+        envs: Array<String?>?,
+        outputCallback: StreamCallback?,
+        errorCallback: StreamCallback?,
+    ): Process {
+        val p = Runtime.getRuntime().exec(cmds, envs)
+        StreamConsumer(p.inputStream, outputCallback).start()
+        StreamConsumer(p.errorStream, errorCallback).start()
+        return p
+    }
+
+    private class StreamConsumer : Thread {
+        private var inputStream: InputStream
+        private var stringBuilder: StringBuilder? = null
+        private var streamCallback: StreamCallback? = null
+
+        constructor(inputStream: InputStream, stringBuilder: StringBuilder?) {
+            this.inputStream = inputStream
+            this.stringBuilder = stringBuilder
         }
-    }
 
-    public static int execute(String[] cmds, String[] envs, StringBuilder outputBuilder, StringBuilder errorBuilder) throws IOException, InterruptedException {
-        Process p = Runtime.getRuntime().exec(cmds, envs);
-        new StreamConsumer(p.getInputStream(), outputBuilder).start();
-        new StreamConsumer(p.getErrorStream(), errorBuilder).start();
-        return p.waitFor();
-    }
-
-    public static Process execute(String[] cmds, String[] envs, StreamCallback outputCallback, StreamCallback errorCallback) throws IOException {
-        Process p = Runtime.getRuntime().exec(cmds, envs);
-        new StreamConsumer(p.getInputStream(), outputCallback).start();
-        new StreamConsumer(p.getErrorStream(), errorCallback).start();
-        return p;
-    }
-
-    private static class StreamConsumer extends Thread {
-        private InputStream inputStream;
-        private StringBuilder stringBuilder;
-        private StreamCallback streamCallback;
-
-        public StreamConsumer(InputStream inputStream, StringBuilder stringBuilder) {
-            this.inputStream = inputStream;
-            this.stringBuilder = stringBuilder;
+        constructor(inputStream: InputStream, streamCallback: StreamCallback?) {
+            this.inputStream = inputStream
+            this.streamCallback = streamCallback
         }
 
-        public StreamConsumer(InputStream inputStream, StreamCallback streamCallback) {
-            this.inputStream = inputStream;
-            this.streamCallback = streamCallback;
-        }
-
-        @Override
-        public void run() {
-            BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
-            String line;
+        override fun run() {
+            val br = BufferedReader(InputStreamReader(inputStream))
+            var line: String
             try {
-                while ((line = br.readLine()) != null) {
+                while (br.readLine().also { line = it } != null) {
                     if (streamCallback != null) {
-                        streamCallback.onReadLine(line);
+                        streamCallback!!.onReadLine(line)
                     } else if (stringBuilder != null) {
-                        stringBuilder.append(line);
-                        stringBuilder.append("\n");
+                        stringBuilder!!.append(line)
+                        stringBuilder!!.append("\n")
                     } else {
-                        Log.v(TAG, "StreamConsumer: " + line);
+                        Log.v(TAG, "StreamConsumer: $line")
                     }
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "StreamConsumer error", e);
+            } catch (e: Exception) {
+                Log.e(TAG, "StreamConsumer error", e)
             }
         }
     }
 
-    public interface StreamCallback {
-        void onReadLine(String line);
+    interface StreamCallback {
+        fun onReadLine(line: String?)
     }
-
-
 }

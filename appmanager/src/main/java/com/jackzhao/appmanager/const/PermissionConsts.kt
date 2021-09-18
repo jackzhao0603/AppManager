@@ -1,6 +1,9 @@
 package com.jackzhao.appmanager.const
 
 import android.Manifest
+import android.content.Context
+
+var jackContext: Context? = null
 
 object PermissionConsts {
     val CONTACTS = arrayOf<String>(

@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
                     override fun onPermissionFailed(
                         activity: Activity,
                         requestCode: Int,
-                        deinedPermissions: Array<String>
+                        deinedPermissions: Array<String>,
                     ) {
                         Log.e(TAG, "onPermissionFailed: $requestCode --> $deinedPermissions")
                         if (!ActivityCompat.shouldShowRequestPermissionRationale(
@@ -52,7 +52,7 @@ class MainActivity : ComponentActivity() {
                                 deinedPermissions[0]
                             )
                         ) {
-                            PermissionManager.gotoAppSettingsConfigActivity(activity)
+                            PermissionManager.gotoAppSettingsConfigActivity()
                         }
                     }
                 })
@@ -62,8 +62,9 @@ class MainActivity : ComponentActivity() {
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<String>,
-        grantResults: IntArray
+        grantResults: IntArray,
     ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         PermissionManager.onRequestPermissionsResult(this, requestCode, permissions, grantResults)
     }
 }

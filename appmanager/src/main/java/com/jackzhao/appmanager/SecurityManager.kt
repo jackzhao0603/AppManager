@@ -1,48 +1,49 @@
 package com.jackzhao.appmanager
 
-import com.jackzhao.appmanager.utils.VersionUtils
-import android.app.admin.DevicePolicyManager
-import com.jackzhao.appmanager.utils.ReflectionUtils
 import android.app.KeyguardManager
+import android.app.admin.DevicePolicyManager
 import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
 import com.jackzhao.appmanager.AppManager.gotoSystemSetting
+import com.jackzhao.appmanager.const.jackContext
+import com.jackzhao.appmanager.utils.ReflectionUtils
+import com.jackzhao.appmanager.utils.VersionUtils
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
-import java.lang.Exception
 
 object SecurityManager {
-    fun checkNonMarketAppEnabled(context: Context): Boolean {
+    fun checkNonMarketAppEnabled(): Boolean {
         val result = Settings.Secure.getInt(
-            context.contentResolver,
+            jackContext!!.contentResolver,
             Settings.Secure.INSTALL_NON_MARKET_APPS, 0
         )
         return result != 0
     }
 
-    fun checkAdbDebugEnabled(context: Context): Boolean {
+    fun checkAdbDebugEnabled(): Boolean {
         if (VersionUtils.isAndroidJBMR1()) {
             val result = Settings.Global.getInt(
-                context.contentResolver,
+                jackContext!!.contentResolver,
                 Settings.Global.ADB_ENABLED, 0
             )
             return result != 0
         }
         val result = Settings.Secure.getInt(
-            context.contentResolver,
+            jackContext!!.contentResolver,
             Settings.Secure.ADB_ENABLED, 0
         )
         return result != 0
     }
 
-    fun checkEncryptDeviceEnabled(context: Context): Boolean {
-        val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+    fun checkEncryptDeviceEnabled(): Boolean {
+        val dpm =
+            jackContext!!.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
         if (VersionUtils.isAndroidJBMR1()) {
             val result = Settings.Secure.getInt(
-                context.contentResolver,
+                jackContext!!.contentResolver,
                 "require_password_to_decrypt", 0
             )
         }
@@ -50,13 +51,13 @@ object SecurityManager {
         return status >= DevicePolicyManager.ENCRYPTION_STATUS_ACTIVATING
     }
 
-    fun isSecured(context: Context): Boolean {
+    fun isSecured(): Boolean {
         var isSecured = false
         val classPath = "com.android.internal.widget.LockPatternUtils"
         try {
             val lockPatternClass = Class.forName(classPath)
             val lockPatternObject = lockPatternClass.getConstructor(Context::class.java)
-                .newInstance(context.applicationContext)
+                .newInstance(jackContext!!.applicationContext)
             val method = lockPatternClass.getMethod("isSecure")
             isSecured = method.invoke(lockPatternObject) as Boolean
             ReflectionUtils.getField(classPath, "isSecure", lockPatternObject)
@@ -66,17 +67,17 @@ object SecurityManager {
         return isSecured
     }
 
-    fun isDeviceSecure(context: Context): Boolean {
+    fun isDeviceSecure(): Boolean {
         return if (!VersionUtils.isAndroidM()) {
             val result = Settings.System.getInt(
-                context.contentResolver,
+                jackContext!!.contentResolver,
                 Settings.Secure.LOCK_PATTERN_ENABLED,
                 0
             )
-            result != 0 || isSecured(context)
+            result != 0 || isSecured()
         } else {
             val km =
-                context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+                jackContext!!.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
             km.isDeviceSecure
         }
     }
@@ -122,19 +123,19 @@ object SecurityManager {
     }
 
 
-    fun gotoSystemDeveloperSettings(context: Context): Boolean {
-        return gotoSystemSetting(context, Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+    fun gotoSystemDeveloperSettings(): Boolean {
+        return gotoSystemSetting(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
     }
 
-    fun gotoSystemSecuritySettings(context: Context): Boolean {
-        return gotoSystemSetting(context, Settings.ACTION_SECURITY_SETTINGS)
+    fun gotoSystemSecuritySettings(): Boolean {
+        return gotoSystemSetting(Settings.ACTION_SECURITY_SETTINGS)
     }
 
-    fun gotoSystemLockScreenSettings(context: Context): Boolean {
+    fun gotoSystemLockScreenSettings(): Boolean {
         return try {
             val intent = Intent(DevicePolicyManager.ACTION_SET_NEW_PASSWORD)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
+            jackContext!!.startActivity(intent)
             true
         } catch (e: Exception) {
             e.printStackTrace()

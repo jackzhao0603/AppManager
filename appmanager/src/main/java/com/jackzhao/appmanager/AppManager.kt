@@ -9,6 +9,7 @@ import android.os.Build
 import android.provider.Settings
 import android.text.TextUtils
 import android.util.Log
+import com.jackzhao.appmanager.const.jackContext
 import com.jackzhao.appmanager.utils.VersionUtils
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
@@ -27,12 +28,12 @@ object AppManager {
     const val EXTRA_PREFS_SHOW_BUTTON_BAR = "extra_prefs_show_button_bar"
     const val EXTRA_SHOW_FRAGMENT_AS_SUBSETTING = ":settings:show_fragment_as_subsetting"
 
-    fun isAppHideIcon(context: Context, pkg: String): Boolean {
+    fun isAppHideIcon(pkg: String): Boolean {
         if (VersionUtils.isAndroidL()) {
             val resolveIntent = Intent(Intent.ACTION_MAIN, null)
             resolveIntent.addCategory(Intent.CATEGORY_LAUNCHER)
             resolveIntent.setPackage(pkg)
-            val resolveinfoList = context.packageManager
+            val resolveinfoList = jackContext!!.packageManager
                 .queryIntentActivities(resolveIntent, 0)
             try {
                 resolveinfoList.iterator().next()
@@ -44,17 +45,17 @@ object AppManager {
         return false
     }
 
-    fun getLauncherPackageName(context: Context): String {
+    fun getLauncherPackageName(): String {
         val intent = Intent(Intent.ACTION_MAIN)
         intent.addCategory(Intent.CATEGORY_HOME)
 
-        val pm: PackageManager = context.packageManager
+        val pm: PackageManager = jackContext!!.packageManager
         val resolveInfo = pm.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
         return resolveInfo?.activityInfo?.packageName ?: "com.android.launcher3"
     }
 
-    fun isSystemApp(context: Context, pkg: String): Boolean {
-        val pm = context.packageManager
+    fun isSystemApp(pkg: String): Boolean {
+        val pm = jackContext!!.packageManager
         return if (pkg != null) {
             try {
                 val info = pm.getPackageInfo(pkg, 0)
@@ -69,19 +70,18 @@ object AppManager {
     }
 
     private fun getIntentPkgList(
-        context: Context,
         intent: Intent,
         bSystemOnly: Boolean,
     ): List<String>? {
         val list: MutableList<String> = ArrayList()
-        val pm: PackageManager = context.packageManager
+        val pm: PackageManager = jackContext!!.packageManager
         val infoList = pm.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY)
         val r0 = infoList[0]
         for (info in infoList) {
             if (r0.priority == info.priority
                 && r0.isDefault == info.isDefault
             ) {
-                if (bSystemOnly && !isSystemApp(context, info.activityInfo.packageName)) {
+                if (bSystemOnly && !isSystemApp(info.activityInfo.packageName)) {
                     continue
                 }
                 list.add(info.activityInfo.packageName)
@@ -90,15 +90,15 @@ object AppManager {
         return list
     }
 
-    fun getBrowserList(context: Context, bSystemOnly: Boolean): List<String?>? {
+    fun getBrowserList(bSystemOnly: Boolean): List<String?>? {
         val intent = Intent(Intent.ACTION_VIEW)
         intent.addCategory(Intent.CATEGORY_BROWSABLE)
         intent.data = Uri.parse("http://www.trendmicro.com")
-        return getIntentPkgList(context, intent, bSystemOnly)
+        return getIntentPkgList(intent, bSystemOnly)
     }
 
-    fun getInstallerPkg(context: Context): String {
-        val packageManager: PackageManager = context.packageManager
+    fun getInstallerPkg(): String {
+        val packageManager: PackageManager = jackContext!!.packageManager
         val intent = Intent(Intent.ACTION_VIEW)
         intent.setDataAndType(
             Uri.parse("file://tmp.apk"),
@@ -113,8 +113,8 @@ object AppManager {
     }
 
 
-    fun getSettingPkgname(context: Context): String {
-        val packageManager: PackageManager = context.packageManager
+    fun getSettingPkgname(): String {
+        val packageManager: PackageManager = jackContext!!.packageManager
         val intent = Intent(Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS)
         val defaultResolveInfo = packageManager.resolveActivity(
             intent,
@@ -123,15 +123,15 @@ object AppManager {
         return defaultResolveInfo?.activityInfo?.packageName ?: "com.android.settings"
     }
 
-    fun getAllAppsInOS(context: Context): List<String> {
+    fun getAllAppsInOS(): List<String> {
         try {
-            val packageManager = context.packageManager
+            val packageManager = jackContext!!.packageManager
             val packageInfos = packageManager.getInstalledPackages(0)
             val packageNames: MutableList<String> = ArrayList()
             if (packageInfos != null) {
                 for (i in packageInfos.indices) {
                     val packName = packageInfos[i].packageName
-                    if (TextUtils.equals(context.packageName, packName)) continue
+                    if (TextUtils.equals(jackContext!!.packageName, packName)) continue
                     packageNames.add(packName)
                 }
             }
@@ -144,8 +144,8 @@ object AppManager {
     }
 
 
-    fun isInputMethodApp(context: Context, packageName: String): Boolean {
-        val pm = context.packageManager
+    fun isInputMethodApp(packageName: String): Boolean {
+        val pm = jackContext!!.packageManager
         var isInputMethodApp = false
         try {
             val pkgInfo = pm.getPackageInfo(packageName, PackageManager.GET_SERVICES)
@@ -167,11 +167,11 @@ object AppManager {
         return isInputMethodApp
     }
 
-    fun gotoSystemSetting(context: Context, settingAction: String?): Boolean {
+    fun gotoSystemSetting(settingAction: String?): Boolean {
         return try {
             val intent = Intent(settingAction)
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
+            jackContext!!.startActivity(intent)
             true
         } catch (e: java.lang.Exception) {
             e.printStackTrace()
@@ -180,9 +180,9 @@ object AppManager {
     }
 
 
-    fun getSingInfo(context: Context, packageName: String, type: String): List<String>? {
+    fun getSingInfo(packageName: String, type: String): List<String>? {
         val list: MutableList<String> = java.util.ArrayList()
-        val signs: Array<Signature>? = getSignatures(context, packageName)
+        val signs: Array<Signature>? = getSignatures(packageName)
         signs?.let {
             for (sig in signs) {
                 if (SHA1 == type) {
@@ -232,16 +232,16 @@ object AppManager {
      * @param packageName
      * @return
      */
-    fun getSignatures(context: Context, packageName: String): Array<Signature>? {
+    fun getSignatures(packageName: String): Array<Signature>? {
         try {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                val packageInfo = context.packageManager.getPackageInfo(
+                val packageInfo = jackContext!!.packageManager.getPackageInfo(
                     packageName!!,
                     PackageManager.GET_SIGNING_CERTIFICATES
                 )
                 packageInfo.signingInfo.signingCertificateHistory
             } else {
-                val packageInfo = context.packageManager.getPackageInfo(
+                val packageInfo = jackContext!!.packageManager.getPackageInfo(
                     packageName!!,
                     PackageManager.GET_SIGNATURES
                 )
@@ -254,8 +254,8 @@ object AppManager {
     }
 
 
-    fun getVersionCode(context: Context, pkg: String): String {
-        val pm = context.packageManager
+    fun getVersionCode(pkg: String): String {
+        val pm = jackContext!!.packageManager
         try {
             val packageInfo = pm.getPackageInfo(pkg, 0)
             return packageInfo.versionName
@@ -266,8 +266,8 @@ object AppManager {
     }
 
 
-    fun getApkPathByPkg(context: Context, pkg: String): String? {
-        val pm = context.packageManager
+    fun getApkPathByPkg(pkg: String): String? {
+        val pm = jackContext!!.packageManager
         try {
             val packageInfo = pm.getPackageInfo(pkg, 0)
             return packageInfo.applicationInfo.sourceDir
@@ -277,8 +277,8 @@ object AppManager {
         return null
     }
 
-    fun getApplicationInfo(context: Context, pkg: String): ApplicationInfo? {
-        val pm = context.packageManager
+    fun getApplicationInfo(pkg: String): ApplicationInfo? {
+        val pm = jackContext!!.packageManager
         try {
             val packageInfo = pm.getPackageInfo(pkg, 0)
             return packageInfo.applicationInfo
@@ -289,8 +289,8 @@ object AppManager {
     }
 
 
-    fun findActivitiesForPackage(context: Context, packageName: String): List<ResolveInfo>? {
-        val packageManager = context.packageManager
+    fun findActivitiesForPackage(packageName: String): List<ResolveInfo>? {
+        val packageManager = jackContext!!.packageManager
         val mainIntent = Intent(Intent.ACTION_MAIN, null)
         mainIntent.addCategory(Intent.CATEGORY_LAUNCHER)
         mainIntent.setPackage(packageName)
@@ -298,14 +298,14 @@ object AppManager {
         return apps ?: java.util.ArrayList()
     }
 
-    fun getMarketApps(context: Context?): ArrayList<String> {
+    fun getMarketApps(): ArrayList<String> {
         val pkgs: ArrayList<String> = ArrayList()
-        if (context == null) return pkgs
+        if (jackContext == null) return pkgs
         val intent = Intent()
         intent.action = "android.intent.action.VIEW"
         intent.addCategory(Intent.CATEGORY_DEFAULT)
         intent.data = Uri.parse("market://details?id=")
-        val pm = context.packageManager
+        val pm = jackContext!!.packageManager
         val infos = pm.queryIntentActivities(
             intent,
             0
@@ -326,23 +326,18 @@ object AppManager {
     }
 
 
-    fun showAppInfo(context: Context, packageName: String) {
+    fun showAppInfo(packageName: String) {
         val packageURI = Uri.parse("package:$packageName")
         val intent = Intent("android.settings.APPLICATION_DETAILS_SETTINGS", packageURI)
         intent.flags = (Intent.FLAG_ACTIVITY_CLEAR_TASK
                 or Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT
                 or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
-        if (context !is Activity) {
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         intent.putExtra(EXTRA_SHOW_FRAGMENT_AS_SUBSETTING, true)
         intent.putExtra(EXTRA_PREFS_SHOW_BUTTON_BAR, true)
         intent.putExtra(EXTRA_PREFS_SET_BACK_TEXT, "BACK")
         try {
-            context.startActivity(intent)
-            if (context is Activity) {
-                context.overridePendingTransition(0, 0)
-            }
+            jackContext!!.startActivity(intent)
         } catch (e: java.lang.Exception) {
             e.printStackTrace()
         }
