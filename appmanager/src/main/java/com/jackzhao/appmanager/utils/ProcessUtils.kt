@@ -36,9 +36,9 @@ object ProcessUtils {
         return jackContext!!.packageName
     }
 
-    fun isMainProcess(): Boolean {
+    fun isMainProcess(context: Context): Boolean {
         val processName = getProcessName()
-        val pkgName = jackContext!!.packageName
+        val pkgName = context.packageName
         return !(!TextUtils.isEmpty(processName) && !TextUtils.equals(processName, pkgName))
     }
 
