@@ -10,12 +10,5 @@
         android:name="android.permission.UPDATE_APP_OPS_STATS"
         tools:ignore="ProtectedPermissions" />
 
-    <application>
-        <provider
-            android:name=".provider.AppManagerProvider"
-            android:authorities="${applicationId}.appmanager.contextprovider"
-            android:enabled="true"
-            android:exported="false" />
-    </application>
 
 </manifest>

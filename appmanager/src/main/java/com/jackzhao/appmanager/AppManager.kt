@@ -27,6 +27,9 @@ object AppManager {
     const val EXTRA_PREFS_SET_BACK_TEXT = "extra_prefs_set_back_text"
     const val EXTRA_PREFS_SHOW_BUTTON_BAR = "extra_prefs_show_button_bar"
     const val EXTRA_SHOW_FRAGMENT_AS_SUBSETTING = ":settings:show_fragment_as_subsetting"
+    fun init(context: Context) {
+        jackContext = context
+    }
 
     fun isAppHideIcon(pkg: String): Boolean {
         if (VersionUtils.isAndroidL()) {
