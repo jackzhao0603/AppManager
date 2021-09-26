@@ -1,6 +1,5 @@
 package com.jackzhao.appmanager.utils
 
-import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.content.Context
 import android.text.TextUtils
@@ -17,14 +16,14 @@ object ProcessUtils {
 
     @Volatile
     private var processName: String? = null
-    fun getProcessName(): String? {
+    fun getProcessName(context: Context): String? {
         if (!TextUtils.isEmpty(processName)) return processName
-        processName = doGetProcessName()
+        processName = doGetProcessName(context)
         return processName
     }
 
-    private fun doGetProcessName(): String? {
-        val am = jackContext!!.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+    private fun doGetProcessName(context: Context): String? {
+        val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val runningApps = am.runningAppProcesses ?: return null
         for (proInfo in runningApps) {
             if (proInfo.pid == android.os.Process.myPid()) {
@@ -37,7 +36,7 @@ object ProcessUtils {
     }
 
     fun isMainProcess(context: Context): Boolean {
-        val processName = getProcessName()
+        val processName = getProcessName(context)
         val pkgName = context.packageName
         return !(!TextUtils.isEmpty(processName) && !TextUtils.equals(processName, pkgName))
     }
