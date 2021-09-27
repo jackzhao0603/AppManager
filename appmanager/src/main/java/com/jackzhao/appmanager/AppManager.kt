@@ -1,6 +1,5 @@
 package com.jackzhao.appmanager
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.pm.*
@@ -15,9 +14,6 @@ import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.util.*
 import kotlin.collections.ArrayList
-import kotlin.collections.List
-import kotlin.collections.MutableList
-import kotlin.collections.indices
 import kotlin.experimental.and
 import kotlin.experimental.or
 
@@ -27,7 +23,12 @@ object AppManager {
     const val EXTRA_PREFS_SET_BACK_TEXT = "extra_prefs_set_back_text"
     const val EXTRA_PREFS_SHOW_BUTTON_BAR = "extra_prefs_show_button_bar"
     const val EXTRA_SHOW_FRAGMENT_AS_SUBSETTING = ":settings:show_fragment_as_subsetting"
+
+    @Synchronized
     fun init(context: Context) {
+        if (jackContext != null) {
+            return
+        }
         jackContext = context
     }
 
